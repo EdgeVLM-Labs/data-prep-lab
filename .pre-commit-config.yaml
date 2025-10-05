@@ -1,0 +1,46 @@
+repos:
+  # Hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+
+  # Secrets
+  # - repo: https://github.com/Yelp/detect-secrets
+  #   rev: v1.5.0
+  #   hooks:
+  #     - id: detect-secrets
+  #       args: ["--baseline", ".secrets.baseline"]
+  #       exclude: ".*\\.lock$"
+
+  # Shell
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks: [{ id: shellcheck }]
+  # - repo: https://github.com/luizribeiro/mirrors-shfmt
+  #   rev: v3.7.0
+  #   hooks: [{ id: shfmt, args: ["-i", "2", "-ci"] }]
+
+  # Python style & lint
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.3
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  # Markdown
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.45.0
+    hooks:
+      - id: markdownlint
+        language_version: system
+
+  # Enforce file/folder naming (snake_case for both)
+  - repo: https://github.com/EdgeVLM-Labs/standards
+    rev: main
+    hooks:
+      - id: check-names

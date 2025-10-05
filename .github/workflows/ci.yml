@@ -1,0 +1,12 @@
+name: CI
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+jobs:
+  standards:
+    uses: EdgeVLM-Labs/.github/.github/workflows/_standards.yml@main
+    with:
+      canonical_ref: "v1.0.0"
