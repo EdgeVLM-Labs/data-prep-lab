@@ -18,7 +18,7 @@ import numpy as np
 from tqdm import tqdm
 
 ROOT_DIR = Path("dataset")
-OUTPUT_DIR = ROOT_DIR / "reports"
+OUTPUT_DIR = Path(__file__).parent / "exercise_motion_reports"
 CSV_FILENAME = "exercise_motion_report.csv"
 JSON_FILENAME = "dataset_motion_overview.json"
 CSV_PATH = OUTPUT_DIR / CSV_FILENAME
@@ -128,23 +128,8 @@ def main() -> None:
     with open(CSV_PATH, "w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerows(summary_rows)
     print(f"\nCSV saved to {CSV_PATH}")
-    payload = {
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "root_dir": str(ROOT_DIR),
-        "output_dir": str(OUTPUT_DIR),
-        "csv_filename": CSV_FILENAME,
-        "json_filename": JSON_FILENAME,
-        "sample_size_per_exercise": N,
-        "motion_params": {
-            "num_frames": NUM_FRAMES,
-            "frame_stride": FRAME_STRIDE,
-            "motion_diff_threshold": MOTION_DIFF_THRESHOLD,
-            "motion_min_pixel_change_ratio": MOTION_MIN_PIXEL_CHANGE_RATIO,
-            "motion_min_active_frame_pct": MOTION_MIN_ACTIVE_FRAME_PCT,
-            "exercise_motion_threshold": EXERCISE_MOTION_THRESHOLD,
-        },
-        "exercise_flags": exercise_flags,
-    }
+    payload = exercise_flags
+
     with open(JSON_PATH, "w", encoding="utf-8") as jf:
         json.dump(payload, jf, ensure_ascii=False, indent=2)
     print(f"JSON saved to {JSON_PATH}")
