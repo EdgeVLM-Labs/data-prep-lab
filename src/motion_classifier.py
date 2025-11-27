@@ -1,17 +1,18 @@
 """
+Motion detection classifier for exercise videos.
+
 Features:
 - Detects motion in exercise videos
 - Randomly samples N videos per exercise
 - Saves results to CSV and JSON files
 """
 
-import os
-import random
 import csv
 import json
-from datetime import datetime, timezone
-from pathlib import Path
+import os
+import random
 from collections import defaultdict
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -113,7 +114,16 @@ def main() -> None:
             per_ex_counts[ex]["motion"] += 1
         else:
             per_ex_counts[ex]["no_motion"] += 1
-    summary_rows = [("exercise", "motion_videos", "no_motion_videos", "total_videos", "motion_fraction", "is_motion_exercise")]
+    summary_rows = [
+        (
+            "exercise",
+            "motion_videos",
+            "no_motion_videos",
+            "total_videos",
+            "motion_fraction",
+            "is_motion_exercise",
+        )
+    ]
     exercise_flags = {}
     print("\nPer-exercise summary:")
     for ex in sorted(per_ex_counts.keys()):
@@ -124,7 +134,10 @@ def main() -> None:
         is_motion = motion_fraction >= EXERCISE_MOTION_THRESHOLD
         exercise_flags[ex] = is_motion
         summary_rows.append((ex, m, nm, total, f"{motion_fraction:.2f}", is_motion))
-        print(f"{ex:20s} motion={m:<3} non_motion={nm:<3} fraction={motion_fraction:.2f} is_motion={is_motion}")
+        print(
+            f"{ex:20s} motion={m:<3} non_motion={nm:<3} "
+            f"fraction={motion_fraction:.2f} is_motion={is_motion}"
+        )
     with open(CSV_PATH, "w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerows(summary_rows)
     print(f"\nCSV saved to {CSV_PATH}")

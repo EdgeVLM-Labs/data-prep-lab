@@ -1,4 +1,6 @@
 """
+Hugging Face folder deletion utility.
+
 Deletes an entire folder (and its contents)
 from a Hugging Face dataset repository.
 
@@ -6,18 +8,18 @@ Reads Hugging Face token from a .env file.
 """
 
 import os
-from huggingface_hub import HfApi, list_repo_files
+
 from dotenv import load_dotenv
+from huggingface_hub import HfApi, list_repo_files
 
-
-REPO_ID = "EdgeVLM-Labs/QVED-Test-Dataset"   # Your dataset repo
-FOLDER = "knee_circles"                      # Folder to delete
-REPO_TYPE = "dataset"                        # "dataset" or "model"
-DRY_RUN = False                              # Set False to actually delete
+REPO_ID = "EdgeVLM-Labs/QVED-Test-Dataset"  # Your dataset repo
+FOLDER = "knee_circles"  # Folder to delete
+REPO_TYPE = "dataset"  # "dataset" or "model"
+DRY_RUN = False  # Set False to actually delete
 
 
 def main():
-
+    """Delete a folder from Hugging Face dataset repository."""
     load_dotenv()
     token = os.getenv("HF_TOKEN")
 

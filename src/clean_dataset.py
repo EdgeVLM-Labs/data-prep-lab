@@ -1,4 +1,6 @@
 """
+Video quality checker and dataset cleaner.
+
 Features:
 - Checks video quality (resolution, brightness, sharpness, motion)
 - Copies only good videos to a cleaned dataset
@@ -8,15 +10,16 @@ Features:
     - exercise_analysis_report.csv  → Detailed per-file metrics, motion stats, and rejection reasons
 """
 
+import json
+import os
+import shutil
+from pathlib import Path
+
 import cv2
 import numpy as np
-import shutil
 import pandas as pd
-import os
-from pathlib import Path
 from tabulate import tabulate
 from tqdm import tqdm
-import json
 
 DATASET_PATH = Path("dataset")
 CLEANED_DATASET_PATH = Path("cleaned_dataset")
@@ -77,9 +80,13 @@ def analyze_video_quality(video_path: Path, num_frames: int, frame_stride: int, 
     motion_pairs = 0
     change_ratios = []
 
-    motion_flag = MOTION_FLAGS.get(exercise_name, False)  # Check if motion analysis is needed for an exercise
+    motion_flag = MOTION_FLAGS.get(
+        exercise_name, False
+    )  # Check if motion analysis is needed for an exercise
 
-    while samples_collected < num_frames and frame_index < max(frame_count, num_frames * frame_stride + 1):
+    while samples_collected < num_frames and frame_index < max(
+        frame_count, num_frames * frame_stride + 1
+    ):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
         ret, frame = cap.read()
         if not ret:
@@ -117,7 +124,7 @@ def analyze_video_quality(video_path: Path, num_frames: int, frame_stride: int, 
     if samples_collected == 0:
         issues.append("corrupted_file")
 
-    motion_detected = False 
+    motion_detected = False
     motion_active_frame_pct = float("nan")
     motion_mean_change_ratio = float("nan")
     motion_max_change_ratio = float("nan")
@@ -145,7 +152,11 @@ def analyze_video_quality(video_path: Path, num_frames: int, frame_stride: int, 
 
 
 def evaluate_video_acceptance(metrics: dict, issues: list, stats: dict):
-    """Check if a video meets the minimum quality thresholds for acceptance and return (accepted, reasons)."""
+    """
+    Check if a video meets the minimum quality thresholds.
+
+    Returns (accepted, reasons).
+    """
     width, height = metrics.get("width", 0), metrics.get("height", 0)
     brightness = metrics.get("mean_brightness", float("nan"))
     sharpness = metrics.get("sharpness_score", float("nan"))
@@ -153,7 +164,7 @@ def evaluate_video_acceptance(metrics: dict, issues: list, stats: dict):
     motion_flag = metrics.get("motion_flag", False)
 
     reasons = []
-    accepted = True  
+    accepted = True
 
     if ("corrupted_file" in issues) or np.isnan(brightness) or np.isnan(sharpness):
         stats["corrupted_files"] += 1
@@ -190,16 +201,16 @@ def evaluate_video_acceptance(metrics: dict, issues: list, stats: dict):
 def default_stats(exercise_name: str) -> dict:
     """Return a default dictionary to track video quality statistics."""
     return {
-            "Exercise": exercise_name,
-            "total_videos": 0,
-            "accepted_videos": 0,
-            "rejected_videos": 0,
-            "corrupted_files": 0,
-            "low_resolution": 0,
-            "too_dark": 0,
-            "too_bright": 0,
-            "blurry": 0,
-            "insufficient_motion": 0,
+        "Exercise": exercise_name,
+        "total_videos": 0,
+        "accepted_videos": 0,
+        "rejected_videos": 0,
+        "corrupted_files": 0,
+        "low_resolution": 0,
+        "too_dark": 0,
+        "too_bright": 0,
+        "blurry": 0,
+        "insufficient_motion": 0,
     }
 
 
@@ -250,7 +261,7 @@ def generate_cleaning_report(overall_exercise_stats, totals, destination_root: P
     print(tabulate(df, headers="keys", tablefmt="simple", showindex=False))
 
     if destination_root is not None:
-        report_dir = destination_root 
+        report_dir = destination_root
         ensure_directory_exists(report_dir)
 
         csv_path = report_dir / "cleaning_report.csv"
@@ -301,7 +312,9 @@ def clean_dataset(source_root: Path, destination_root: Path):
         exercise_stats = default_stats(folder_name)
         any_video = False
 
-        with tqdm(total=len(files), desc=f"Processing {folder_name}", unit="video", ncols=80, leave=False) as pbar:
+        with tqdm(
+            total=len(files), desc=f"Processing {folder_name}", unit="video", ncols=80, leave=False
+        ) as pbar:
             for file in files:
                 if not file.lower().endswith(video_extensions):
                     continue
@@ -310,28 +323,42 @@ def clean_dataset(source_root: Path, destination_root: Path):
                 exercise_stats["total_videos"] += 1
                 video_path = root_path / file
 
-                metrics, issues = analyze_video_quality(video_path, NUM_SAMPLED_FRAMES, FRAME_STRIDE, folder_name)
+                metrics, issues = analyze_video_quality(
+                    video_path, NUM_SAMPLED_FRAMES, FRAME_STRIDE, folder_name
+                )
                 accepted, reasons = evaluate_video_acceptance(metrics, issues, exercise_stats)
 
                 decision = "accepted" if accepted else "rejected"
 
-                VIDEO_LOG.append({
-                    "exercise": folder_name,
-                    "file": file,
-                    "width": metrics.get("width"),
-                    "height": metrics.get("height"),
-                    "brightness": None if np.isnan(metrics.get("mean_brightness", float("nan"))) else float(np.round(metrics.get("mean_brightness"), 2)),
-                    "sharpness": None if np.isnan(metrics.get("sharpness_score", float("nan"))) else float(np.round(metrics.get("sharpness_score"), 2)),
-                    "motion_flag": metrics.get("motion_flag"),
-                    "motion_detected": metrics.get("motion_detected"),
-                    "motion_pairs": metrics.get("motion_pairs"),
-                    "motion_active_pairs": metrics.get("motion_active_pairs"),
-                    "motion_active_frame_pct": None if np.isnan(metrics.get("motion_active_frame_pct", float("nan"))) else float(np.round(metrics.get("motion_active_frame_pct"), 4)),
-                    "motion_mean_change_ratio": None if np.isnan(metrics.get("motion_mean_change_ratio", float("nan"))) else float(np.round(metrics.get("motion_mean_change_ratio"), 6)),
-                    "motion_max_change_ratio": None if np.isnan(metrics.get("motion_max_change_ratio", float("nan"))) else float(np.round(metrics.get("motion_max_change_ratio"), 6)),
-                    "decision": decision,
-                    "reasons": ", ".join(reasons) if reasons else "passed_all_checks"
-                })
+                VIDEO_LOG.append(
+                    {
+                        "exercise": folder_name,
+                        "file": file,
+                        "width": metrics.get("width"),
+                        "height": metrics.get("height"),
+                        "brightness": None
+                        if np.isnan(metrics.get("mean_brightness", float("nan")))
+                        else float(np.round(metrics.get("mean_brightness"), 2)),
+                        "sharpness": None
+                        if np.isnan(metrics.get("sharpness_score", float("nan")))
+                        else float(np.round(metrics.get("sharpness_score"), 2)),
+                        "motion_flag": metrics.get("motion_flag"),
+                        "motion_detected": metrics.get("motion_detected"),
+                        "motion_pairs": metrics.get("motion_pairs"),
+                        "motion_active_pairs": metrics.get("motion_active_pairs"),
+                        "motion_active_frame_pct": None
+                        if np.isnan(metrics.get("motion_active_frame_pct", float("nan")))
+                        else float(np.round(metrics.get("motion_active_frame_pct"), 4)),
+                        "motion_mean_change_ratio": None
+                        if np.isnan(metrics.get("motion_mean_change_ratio", float("nan")))
+                        else float(np.round(metrics.get("motion_mean_change_ratio"), 6)),
+                        "motion_max_change_ratio": None
+                        if np.isnan(metrics.get("motion_max_change_ratio", float("nan")))
+                        else float(np.round(metrics.get("motion_max_change_ratio"), 6)),
+                        "decision": decision,
+                        "reasons": ", ".join(reasons) if reasons else "passed_all_checks",
+                    }
+                )
 
                 if accepted:
                     copy_video_with_structure(video_path, source_root, destination_root)

@@ -1,4 +1,6 @@
 """
+Dataset downloader with sampling capabilities.
+
 Features:
 - Randomly downloads N videos per exercise subfolder
 - Preserves folder structure
@@ -6,13 +8,14 @@ Features:
 - Creates manifest.json of downloaded videos
 """
 
+import json
 import os
 import random
-import json
-from pathlib import Path
-from huggingface_hub import list_repo_files, hf_hub_download
 import shutil
 import time
+from pathlib import Path
+
+from huggingface_hub import hf_hub_download, list_repo_files
 
 REPO_ID = "EdgeVLM-Labs/QVED-Test-Dataset"
 LOCAL_DIR = Path("dataset")  # local download directory
@@ -24,7 +27,6 @@ RANDOM_SEED = 42
 
 def collect_videos(repo_id):
     """Collects all video files grouped by class (subfolder)."""
-
     print(f"📂 Listing repo files from: {repo_id}")
     all_files = list_repo_files(repo_id, repo_type="dataset")
     by_class = {}
@@ -41,8 +43,11 @@ def collect_videos(repo_id):
 
 
 def sample_and_download(by_class, repo_id, local_dir, max_per_class):
-    """Samples random videos per class and downloads them into <local_dir>/<class>/<file> (no duplicate subfolders)."""
+    """
+    Sample and download random videos per class.
 
+    Downloads into <local_dir>/<class>/<file> with no duplicate subfolders.
+    """
     random.seed(RANDOM_SEED)
     manifest = {}
     total_downloaded = 0
@@ -72,7 +77,10 @@ def sample_and_download(by_class, repo_id, local_dir, max_per_class):
                     break
                 except Exception as e:
                     if "429" in str(e) or "Too Many Requests" in str(e):
-                        print(f"⚠️ Rate limit hit (429). Waiting 4 minutes before retrying {rel_path}...")
+                        print(
+                            f"⚠️ Rate limit hit (429). "
+                            f"Waiting 4 minutes before retrying {rel_path}..."
+                        )
                         time.sleep(240)
                     else:
                         print(f"⚠️ Failed to download {rel_path}: {e}")
@@ -84,7 +92,6 @@ def sample_and_download(by_class, repo_id, local_dir, max_per_class):
 
 def download_ground_truth(repo_id, local_dir, all_files):
     """Downloads fine_grained_labels.json if present."""
-
     candidates = [f for f in all_files if f.endswith(GROUND_TRUTH_FILE)]
     if not candidates:
         print(f"⚠️ No {GROUND_TRUTH_FILE} found in repo.")
@@ -107,7 +114,6 @@ def download_ground_truth(repo_id, local_dir, all_files):
 
 def save_manifest(manifest, local_dir):
     """Saves manifest.json mapping downloaded videos to their class."""
-
     manifest_path = local_dir / "manifest.json"
     with open(manifest_path, "w") as f:
         json.dump(manifest, f, indent=2)
@@ -116,7 +122,7 @@ def save_manifest(manifest, local_dir):
 
 
 def main():
-
+    """Main function to download dataset samples."""
     LOCAL_DIR.mkdir(parents=True, exist_ok=True)
     by_class, all_files = collect_videos(REPO_ID)
     manifest = sample_and_download(by_class, REPO_ID, LOCAL_DIR, MAX_PER_CLASS)
