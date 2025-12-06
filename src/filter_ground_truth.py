@@ -1,6 +1,4 @@
 """
-Ground truth filter for downloaded videos.
-
 Filters fine_grained_labels.json to include only
 ground truths of videos actually downloaded
 by load_dataset.py.
@@ -15,9 +13,8 @@ GROUND_TRUTH_FILE = BASE_DIR / "fine_grained_labels.json"
 MANIFEST_FILE = BASE_DIR / "manifest.json"
 OUTPUT_FILE = BASE_DIR / "ground_truth.json"
 
-
 def main():
-    """Filter ground truth labels to match downloaded videos."""
+
     if not GROUND_TRUTH_FILE.exists() or not MANIFEST_FILE.exists():
         print("⚠️ Required files missing. Please run DownloadDataset.py first.")
         return
@@ -34,8 +31,7 @@ def main():
     # Filter ground truths
     print(f"🧠 Filtering {len(gt_data)} ground truth entries...")
     filtered = [
-        item
-        for item in gt_data
+        item for item in gt_data
         if "video_path" in item and Path(item["video_path"]).name in downloaded_filenames
     ]
 
@@ -45,7 +41,6 @@ def main():
 
     print(f"✅ Filtered ground truths: {len(filtered)} entries")
     print(f"📝 Saved to: {OUTPUT_FILE}")
-
 
 if __name__ == "__main__":
     main()
